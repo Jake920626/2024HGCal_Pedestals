@@ -15,7 +15,7 @@
 int main ( int argc, char ** argv ){
 
 	if ( argc == 1 ){
-		std::cerr << "usage: " << argv[0] << " <input file name> <number of input files> <picture dir path (no need fo /)>" << std::endl ;
+		std::cerr << "usage: " << argv[0] << " <input file name> <number of input files> <output filename (no need .root) > <picture dir path (no need fo /)>" << std::endl ;
 		return 1;
 	}
 
@@ -28,7 +28,7 @@ int main ( int argc, char ** argv ){
 	char HGC_run_filename[100];
 	char HGC_output_filename[100];
 	
-	sprintf(HGC_output_filename, "%s.txt", argv[1]);
+	sprintf(HGC_output_filename, "%s.txt", argv[3]);
 	FILE * HGC_output_file = fopen (HGC_output_filename, "w");
 
 	TFile * HGC_file;
@@ -134,7 +134,7 @@ int main ( int argc, char ** argv ){
 		run_number_arr[i] = i+1;
 	}
 
-	sprintf(HGC_output_filename, "%s.root", argv[1]);
+	sprintf(HGC_output_filename, "%s.root", argv[3]);
 	TFile * HGC_output_root_file = TFile::Open(HGC_output_filename, "RECREATE");
 
 	TGraphErrors* HGCDigi_ADC_Graph[6];
@@ -156,7 +156,7 @@ int main ( int argc, char ** argv ){
 				HGCDigi_ADC_Graph[k] -> Draw("AP");
 				HGCDigi_ADC_Graph[k] -> Write();
 			}
-			sprintf(HGC_Graph_dir_path, "%s/%s module %d channel %d to %d.png", argv[3], argv[1], i, j*6, j*6+5);
+			sprintf(HGC_Graph_dir_path, "%s/%s module %d channel %d to %d.png", argv[4], argv[3], i, j*6, j*6+5);
 			HGCDigi_ADC_Canvas -> Write();
 			HGCDigi_ADC_Canvas -> SaveAs(HGC_Graph_dir_path);
 		}
