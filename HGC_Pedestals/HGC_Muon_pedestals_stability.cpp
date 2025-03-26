@@ -15,7 +15,7 @@
 int main ( int argc, char ** argv ){
 
 	if ( argc == 1 ){
-		std::cerr << "usage: " << argv[0] << " <input file name> <number of input files>" << std::endl ;
+		std::cerr << "usage: " << argv[0] << " <input file name> <number of input files> <picture dir path (no need fo /)>" << std::endl ;
 		return 1;
 	}
 
@@ -38,8 +38,6 @@ int main ( int argc, char ** argv ){
 	UShort_t HGCDigi_ADC[1665] ;
 
 
-	sprintf(HGC_output_filename, "%s.root", argv[1]);
-	TFile * HGC_output_root_file = TFile::Open(HGC_output_filename, "RECREATE");
 
 	Double_t HGCDigi_ADC_tot_mean[6][222];
 	Double_t HGCDigi_ADC_tot_STDev[6][222];
@@ -99,6 +97,8 @@ int main ( int argc, char ** argv ){
 			for (int j = 0; j < 222; j++){
 				HGCDigi_ADC_LuB_mean[i][j][l-1] = HGCDigi_ADC_LuB_Hist[i][j] -> GetMean();
 				HGCDigi_ADC_LuB_STDev[i][j][l-1] = HGCDigi_ADC_LuB_Hist[i][j] -> GetStdDev();
+				delete HGCDigi_ADC_LuB_Hist[i][j];
+
 			}
 		}
 	}
@@ -111,8 +111,8 @@ int main ( int argc, char ** argv ){
 	for (int i = 0; i < 6; i++){
 		for (int j = 0; j < 222; j++){
 			//std::cout << HGCDigi_ADC_tot_Hist[i][j] -> GetMean() << std::endl;
-			HGCDigi_ADC_tot_mean[i][j] = HGCDigi_ADC_LuB_Hist[i][j] -> GetMean();
-			HGCDigi_ADC_tot_STDev[i][j] = HGCDigi_ADC_LuB_Hist[i][j] -> GetStdDev();
+			HGCDigi_ADC_tot_mean[i][j] = HGCDigi_ADC_tot_Hist[i][j] -> GetMean();
+			HGCDigi_ADC_tot_STDev[i][j] = HGCDigi_ADC_tot_Hist[i][j] -> GetStdDev();
 			//std::cout << HGCDigi_ADC_tot_mean[i][j] << " ";
 			fprintf(HGC_output_file, "%.4lf ",HGCDigi_ADC_tot_Hist[i][j] -> GetMean());
 		}
@@ -134,26 +134,39 @@ int main ( int argc, char ** argv ){
 		run_number_arr[i] = i+1;
 	}
 
-	HGC_output_root_file -> cd();
+	sprintf(HGC_output_filename, "%s.root", argv[1]);
+	TFile * HGC_output_root_file = TFile::Open(HGC_output_filename, "RECREATE");
 
 	TGraphErrors* HGCDigi_ADC_Graph[6];
 	TCanvas* HGCDigi_ADC_Canvas = new TCanvas("c1", "Six Graphs", 800, 600);
 	HGCDigi_ADC_Canvas -> Divide(2, 3);
 
+	char HGC_Graph_title[100];
+	char HGC_Graph_dir_path[100];
+
+
+	int HGC_ch_num;
+
 	for (int i = 0; i < 6; i++){
-		HGCDigi_ADC_Canvas -> cd(i + 1);
-		HGCDigi_ADC_Graph[i] = new TGraphErrors(HGC_run_number, run_number_arr, HGCDigi_ADC_diff_mean[0][i], nullptr, HGCDigi_ADC_LuB_STDev[0][i]);
-		HGCDigi_ADC_Graph[i] -> Draw("AP");
-		HGCDigi_ADC_Graph[i] -> Write();
+		for (int j = 0; j < 37; j++){
+			//std::cout << j * 6<< "\n";
+			for (int k = 0; k < 6; k++){
+				HGCDigi_ADC_Canvas -> cd(k + 1);
+				HGCDigi_ADC_Graph[k] = new TGraphErrors(HGC_run_number, run_number_arr, HGCDigi_ADC_diff_mean[i][j*37+k], nullptr, HGCDigi_ADC_LuB_STDev[i][j*37+k]);
+				HGCDigi_ADC_Graph[k] -> Draw("AP");
+				HGCDigi_ADC_Graph[k] -> Write();
+			}
+			sprintf(HGC_Graph_dir_path, "%s/%s module %d channel %d to %d.png", argv[3], argv[1], i, j*6, j*6+5);
+			HGCDigi_ADC_Canvas -> Write();
+			HGCDigi_ADC_Canvas -> SaveAs(HGC_Graph_dir_path);
+		}
 
 	}
-
-	HGCDigi_ADC_Canvas -> Write();
-	HGCDigi_ADC_Canvas -> SaveAs("test.png");
 
 	HGC_file -> Close();
 
 
 	fclose(HGC_output_file);
+	std::cout << "finished\n";
 	return 0;
 }
