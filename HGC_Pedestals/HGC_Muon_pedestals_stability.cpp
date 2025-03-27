@@ -10,6 +10,7 @@
 #include "Rtypes.h"
 #include "TCanvas.h"
 #include "TStyle.h"
+#include "TPaveText.h"
 
 
 int main ( int argc, char ** argv ){
@@ -101,6 +102,7 @@ int main ( int argc, char ** argv ){
 
 			}
 		}
+		HGC_file -> Close();
 	}
 
 	std::cout << "start get means" << std::endl;
@@ -114,19 +116,26 @@ int main ( int argc, char ** argv ){
 			HGCDigi_ADC_tot_mean[i][j] = HGCDigi_ADC_tot_Hist[i][j] -> GetMean();
 			HGCDigi_ADC_tot_STDev[i][j] = HGCDigi_ADC_tot_Hist[i][j] -> GetStdDev();
 			//std::cout << HGCDigi_ADC_tot_mean[i][j] << " ";
-			fprintf(HGC_output_file, "%.4lf ",HGCDigi_ADC_tot_Hist[i][j] -> GetMean());
+			fprintf(HGC_output_file, "%.4lf ",HGCDigi_ADC_tot_mean[i][j]);
+			delete HGCDigi_ADC_tot_Hist[i][j];
 		}
 		//std::cout << std::endl;
 		fprintf(HGC_output_file, "\n");
 	}
 
 	Double_t run_number_arr[HGC_run_number];
+	TH1F * HGCDigi_ADC_diff_mean_Hist;
+	Double_t HGCDigi_ADC_diff_STDev[6][222];
 
 	for (int i = 0; i < 6; i++){
 		for (int j = 0; j < 222; j++){
+			HGCDigi_ADC_diff_mean_Hist = new TH1F( "HDCDigi_ADC_diff", "HGCDigi_ADc_diff", 4000, -200, 200);	
 			for (int k = 0; k < HGC_run_number; k++){
 				HGCDigi_ADC_diff_mean[i][j][k] = HGCDigi_ADC_LuB_mean[i][j][k] - HGCDigi_ADC_tot_mean[i][j];
+				HGCDigi_ADC_diff_mean_Hist -> Fill(HGCDigi_ADC_diff_mean[i][j][k]);
 			}
+			HGCDigi_ADC_diff_STDev[i][j] = HGCDigi_ADC_diff_mean_Hist -> GetStdDev();
+			delete HGCDigi_ADC_diff_mean_Hist;
 		}
 	}
 	
@@ -138,23 +147,32 @@ int main ( int argc, char ** argv ){
 	TFile * HGC_output_root_file = TFile::Open(HGC_output_filename, "RECREATE");
 
 	TGraphErrors* HGCDigi_ADC_Graph[6];
-	TCanvas* HGCDigi_ADC_Canvas = new TCanvas("c1", "Six Graphs", 800, 600);
+	TCanvas* HGCDigi_ADC_Canvas = new TCanvas("c1", "Six Graphs", 1600, 1200);
 	HGCDigi_ADC_Canvas -> Divide(2, 3);
+	HGCDigi_ADC_Canvas -> SetGrid();
 
 	char HGC_Graph_title[100];
 	char HGC_Graph_dir_path[100];
-
-
-	int HGC_ch_num;
 
 	for (int i = 0; i < 6; i++){
 		for (int j = 0; j < 37; j++){
 			//std::cout << j * 6<< "\n";
 			for (int k = 0; k < 6; k++){
+				sprintf(HGC_Graph_title, "module %d channel %d", i, j*6+k);
 				HGCDigi_ADC_Canvas -> cd(k + 1);
 				HGCDigi_ADC_Graph[k] = new TGraphErrors(HGC_run_number, run_number_arr, HGCDigi_ADC_diff_mean[i][j*37+k], nullptr, HGCDigi_ADC_LuB_STDev[i][j*37+k]);
-				HGCDigi_ADC_Graph[k] -> Draw("AP");
+				HGCDigi_ADC_Graph[k] -> SetMarkerColor(kBlue);
+   				HGCDigi_ADC_Graph[k] ->	SetMarkerStyle(21);
+				HGCDigi_ADC_Graph[k] -> SetLineColor(kBlue);
+				HGCDigi_ADC_Graph[k] -> SetTitle(HGC_Graph_title);
+				HGCDigi_ADC_Graph[k] -> Draw("ALP");
 				HGCDigi_ADC_Graph[k] -> Write();
+
+				TPaveText* pt = new TPaveText(0.60, 0.82, 0.90, 0.92, "NDC");
+				pt->AddText(Form("STDev = %.2f", HGCDigi_ADC_diff_STDev[i][j*37+k]));
+				pt->SetFillColor(0);
+				pt->SetTextColor(HGCDigi_ADC_Graph[k]->GetMarkerColor());
+				pt->Draw();
 			}
 			sprintf(HGC_Graph_dir_path, "%s/%s module %d channel %d to %d.png", argv[4], argv[3], i, j*6, j*6+5);
 			HGCDigi_ADC_Canvas -> Write();
@@ -164,7 +182,6 @@ int main ( int argc, char ** argv ){
 	}
 
 	HGC_file -> Close();
-
 
 	fclose(HGC_output_file);
 	std::cout << "finished\n";
