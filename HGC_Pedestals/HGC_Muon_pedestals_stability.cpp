@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iterator>
 #include <string>
 
 #include "TFile.h"
@@ -31,6 +32,8 @@ int main ( int argc, char ** argv ){
 	
 	sprintf(HGC_output_filename, "%s.txt", argv[3]);
 	FILE * HGC_output_file = fopen (HGC_output_filename, "w");
+	//FILE * HGC_output_std1_file = fopen ("std1.txt", "w");
+	//FILE * HGC_output_std2_file = fopen ("std2.txt", "w");
 
 	TFile * HGC_file;
 
@@ -76,8 +79,8 @@ int main ( int argc, char ** argv ){
 
 		for (int i = 0; i < 6; i++){
 			for (int j = 0; j < 222; j++){
-				sprintf(Hist_name, "module %d channel %d", i, j);
-				sprintf(Hist_title, "module %d channel %d", i, j);
+				sprintf(Hist_name, "file %d module %d channel %d", l, i, j);
+				sprintf(Hist_title, "file %d module %d channel %d", l, i, j);
 				HGCDigi_ADC_LuB_Hist[i][j] = new TH1F(Hist_name, Hist_title, 2000, 0, 2000);
 			}
 		}
@@ -88,8 +91,8 @@ int main ( int argc, char ** argv ){
 			HGC_Events -> GetEntry(i);
 			for (int j = 0; j < 6; j++){
 				for (int k = 0; k < 222; k++){
-					HGCDigi_ADC_tot_Hist[j][k] -> Fill( HGCDigi_ADC[j*222+k]);
-					HGCDigi_ADC_LuB_Hist[j][k] -> Fill( HGCDigi_ADC[j*222+k]);
+					HGCDigi_ADC_tot_Hist[j][k] -> Fill(HGCDigi_ADC[j*222+k]);
+					HGCDigi_ADC_LuB_Hist[j][k] -> Fill(HGCDigi_ADC[j*222+k]);
 				}
 			}
 		}
@@ -98,6 +101,7 @@ int main ( int argc, char ** argv ){
 			for (int j = 0; j < 222; j++){
 				HGCDigi_ADC_LuB_mean[i][j][l-1] = HGCDigi_ADC_LuB_Hist[i][j] -> GetMean();
 				HGCDigi_ADC_LuB_STDev[i][j][l-1] = HGCDigi_ADC_LuB_Hist[i][j] -> GetStdDev();
+				//fprintf(HGC_output_std1_file, "%d %d %d %.4lf\n", l, i, j, HGCDigi_ADC_LuB_STDev[i][j][l-1]);
 				delete HGCDigi_ADC_LuB_Hist[i][j];
 
 			}
@@ -133,6 +137,9 @@ int main ( int argc, char ** argv ){
 			for (int k = 0; k < HGC_run_number; k++){
 				HGCDigi_ADC_diff_mean[i][j][k] = HGCDigi_ADC_LuB_mean[i][j][k] - HGCDigi_ADC_tot_mean[i][j];
 				HGCDigi_ADC_diff_mean_Hist -> Fill(HGCDigi_ADC_diff_mean[i][j][k]);
+//				if (HGCDigi_ADC_LuB_STDev[i][j][k] < 30){
+//					std::cout << i << " " << j << std::endl;
+//				}
 			}
 			HGCDigi_ADC_diff_STDev[i][j] = HGCDigi_ADC_diff_mean_Hist -> GetStdDev();
 			delete HGCDigi_ADC_diff_mean_Hist;
@@ -151,6 +158,9 @@ int main ( int argc, char ** argv ){
 	HGCDigi_ADC_Canvas -> Divide(2, 3);
 	HGCDigi_ADC_Canvas -> SetGrid();
 
+	for (int i = 0; i < 6; i++){
+		HGCDigi_ADC_Graph[i] = new TGraphErrors();
+	}
 	char HGC_Graph_title[100];
 	char HGC_Graph_dir_path[100];
 
@@ -160,7 +170,14 @@ int main ( int argc, char ** argv ){
 			for (int k = 0; k < 6; k++){
 				sprintf(HGC_Graph_title, "module %d channel %d", i, j*6+k);
 				HGCDigi_ADC_Canvas -> cd(k + 1);
-				HGCDigi_ADC_Graph[k] = new TGraphErrors(HGC_run_number, run_number_arr, HGCDigi_ADC_diff_mean[i][j*37+k], nullptr, HGCDigi_ADC_LuB_STDev[i][j*37+k]);
+				HGCDigi_ADC_Graph[k] -> Set(HGC_run_number);
+				for ( int l = 0; l < HGC_run_number; l++){
+					//std::cout << "setting " << l << std::endl;
+					HGCDigi_ADC_Graph[k] -> SetPoint(l, l+1, HGCDigi_ADC_diff_mean[i][j*6+k][l]);
+					HGCDigi_ADC_Graph[k] -> SetPointError(l, 0, HGCDigi_ADC_LuB_STDev[i][j*6+k][l]);
+					//std::cout << HGCDigi_ADC_LuB_STDev[i][j*6+k][l] << std::endl;
+					//fprintf(HGC_output_std2_file, "%d %d %d %.4lf\n", l, i, j*6+k, HGCDigi_ADC_LuB_STDev[i][j*6+k][l]);
+				}
 				HGCDigi_ADC_Graph[k] -> SetMarkerColor(kBlue);
    				HGCDigi_ADC_Graph[k] ->	SetMarkerStyle(21);
 				HGCDigi_ADC_Graph[k] -> SetLineColor(kBlue);
@@ -174,16 +191,17 @@ int main ( int argc, char ** argv ){
 				pt->SetTextColor(HGCDigi_ADC_Graph[k]->GetMarkerColor());
 				pt->Draw();
 			}
+			
 			sprintf(HGC_Graph_dir_path, "%s/%s module %d channel %d to %d.png", argv[4], argv[3], i, j*6, j*6+5);
 			HGCDigi_ADC_Canvas -> Write();
 			HGCDigi_ADC_Canvas -> SaveAs(HGC_Graph_dir_path);
 		}
 
 	}
-
-	HGC_file -> Close();
+	HGC_output_root_file -> Close();
 
 	fclose(HGC_output_file);
 	std::cout << "finished\n";
 	return 0;
 }
+
