@@ -186,7 +186,7 @@ int main ( int argc, char ** argv ){
 				HGCDigi_ADC_Graph[k] -> Write();
 
 				TPaveText* pt = new TPaveText(0.60, 0.82, 0.90, 0.92, "NDC");
-				pt->AddText(Form("STDev = %.2f", HGCDigi_ADC_diff_STDev[i][j*37+k]));
+				pt->AddText(Form("STDev = %.2f", HGCDigi_ADC_diff_STDev[i][j*6+k]));
 				pt->SetFillColor(0);
 				pt->SetTextColor(HGCDigi_ADC_Graph[k]->GetMarkerColor());
 				pt->Draw();
