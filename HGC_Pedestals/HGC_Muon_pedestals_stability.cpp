@@ -30,8 +30,10 @@ int main ( int argc, char ** argv ){
 	char HGC_run_filename[100];
 	char HGC_output_filename[100];
 	
-	sprintf(HGC_output_filename, "%s.txt", argv[3]);
-	FILE * HGC_output_file = fopen (HGC_output_filename, "w");
+	sprintf(HGC_output_filename, "%s_mean.txt", argv[3]);
+	FILE * HGC_output_mean_file = fopen (HGC_output_filename, "w");
+	sprintf(HGC_output_filename, "%s_std.txt", argv[3]);
+	FILE * HGC_output_std_file = fopen (HGC_output_filename, "w");
 	//FILE * HGC_output_std1_file = fopen ("std1.txt", "w");
 	//FILE * HGC_output_std2_file = fopen ("std2.txt", "w");
 
@@ -120,11 +122,13 @@ int main ( int argc, char ** argv ){
 			HGCDigi_ADC_tot_mean[i][j] = HGCDigi_ADC_tot_Hist[i][j] -> GetMean();
 			HGCDigi_ADC_tot_STDev[i][j] = HGCDigi_ADC_tot_Hist[i][j] -> GetStdDev();
 			//std::cout << HGCDigi_ADC_tot_mean[i][j] << " ";
-			fprintf(HGC_output_file, "%.4lf ",HGCDigi_ADC_tot_mean[i][j]);
+			fprintf(HGC_output_mean_file, "%.4lf ",HGCDigi_ADC_tot_mean[i][j]);
+			fprintf(HGC_output_std_file, "%.4lf ",HGCDigi_ADC_tot_STDev[i][j]);
 			delete HGCDigi_ADC_tot_Hist[i][j];
 		}
 		//std::cout << std::endl;
-		fprintf(HGC_output_file, "\n");
+		fprintf(HGC_output_mean_file, "\n");
+		fprintf(HGC_output_std_file, "\n");
 	}
 
 	Double_t run_number_arr[HGC_run_number];
